@@ -127,9 +127,10 @@ class Decoder(torch.nn.Module):
             h: Old state of decoder
             enum:  Next English word (int)
 
-        Returns (logprobs, h), where
+        Returns (logprobs, h, alpha), where
             logprobs: Vector of log-probabilities (tensor of size len(evocab))
             h: New state of decoder
+            alpha: cross-attention weights
         """
         
         e = self.emb(enum) + self.pos[len(h)]
@@ -138,7 +139,8 @@ class Decoder(torch.nn.Module):
         c = attention(a, fencs, fencs)
         m = self.merge(torch.cat([c, a]))
         o = self.out(m)
-        return (o, h)
+        alpha = torch.softmax(fencs @ a, dim=0)
+        return (o, h, alpha)
 
 class Model(torch.nn.Module):
     def __init__(self, fvocab, dims, evocab):
@@ -148,9 +150,10 @@ class Model(torch.nn.Module):
         # so that they get loaded and saved with it.
         self.fvocab = fvocab
         self.evocab = evocab
+        self.evocab.add('<COPY>')
         
-        self.enc = Encoder(len(fvocab), dims)
-        self.dec = Decoder(dims, len(evocab))
+        self.enc = Encoder(len(self.fvocab), dims)
+        self.dec = Decoder(dims, len(self.evocab))
         
         # This is just so we know what device to create new tensors on
         self.dummy = torch.nn.Parameter(torch.empty(0))
@@ -172,9 +175,11 @@ class Model(torch.nn.Module):
         assert ewords[0] == '<BOS>'
         enum = self.evocab.numberize(ewords[0])
         for i in range(1, len(ewords)):
-            o, h = self.dec.step(fencs, h, enum)
+            o, h, alpha = self.dec.step(fencs, h, enum)
             enum = self.evocab.numberize(ewords[i])
-            logprob += o[enum]
+            copy_prob = sum([torch.exp(o[self.evocab.numberize('<COPY>')]) * alpha[j] for j in
+                range(len(fwords)) if fwords[j] == ewords[i]])
+            logprob  += torch.log(torch.exp(o[enum]) + copy_prob)
         return logprob
 
     def translate(self, fwords):
@@ -192,10 +197,13 @@ class Model(torch.nn.Module):
         h = self.dec.start()
         ewords = []
         enum = self.evocab.numberize('<BOS>')
-        for i in range(100):
-            o, h = self.dec.step(fencs, h, enum)
+        for i in range(5*len(fwords) + 10):
+            o, h, alpha = self.dec.step(fencs, h, enum)
             enum = torch.argmax(o).item()
             eword = self.evocab.denumberize(enum)
+            if eword == '<COPY>':
+                eword = fwords[torch.argmax(alpha)]
+                enum = self.evocab.numberize(eword)
             if eword == '<EOS>': break
             ewords.append(eword)
         return ewords
