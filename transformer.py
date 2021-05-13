@@ -1,7 +1,5 @@
-### HW2 solution (Spring 2021)
-### transformer.py
-###
-### Please do not distribute to anyone else (especially students taking this course in future years).
+### Baseline Transformer Model for Chess Commentary Generation (Based on CSE40657 HW2 Solution)
+### Erik Meier
 
 import torch
 device = 'cpu'
@@ -53,7 +51,7 @@ def read_parallel(filename):
 
     The file should be in the format:
 
-    我 不 喜 欢 沙 子 \t i do n't like sand
+    <input string> \t <output string>
 
     where \t is a tab character.
     """
