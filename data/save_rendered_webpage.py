@@ -16,7 +16,10 @@ try:
     with open("saved_files/saved" + i + "_" + page + ".html", "wb") as fw:
         fw.write(html_doc.content)
 
-    time.sleep(10)
+    if html_doc.status_code != requests.codes.ok:
+        print("Error")
+
+    time.sleep(20)
 except:
     error_count += 1
     

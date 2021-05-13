@@ -150,13 +150,14 @@ class DataCollector:
 
     def getData(self):
         all_files = self._getList()
-        fw = open("_files.txt","w")
+        fw = open("error_files.txt","w")
         for file in all_files:
             try:
                 print("file = ",file)
                 html_doc = open(self._data_path + file,"r").read()
                 soup = BeautifulSoup(html_doc, "html.parser")
                 results = soup.findAll("table",{"class":"dialog"})
+                print(results)
                 results2 = [ result for result in results[0].findAll("tr") if
                         len(result.findAll("td", recursive=False))==2 and
                         str(result).find("data-chess-diagram") > 0] #based on observation
@@ -193,6 +194,7 @@ class DataCollector:
                     else:
                         boards = current_boards
 
+                    print(current_step_info)
                     current_step_info = [moves, comment]
                     all_steps_info.append(current_step_info)
                 pickle.dump( all_steps_info, open(self._destination_path +

@@ -2,6 +2,7 @@ import pickle
 import sys
 import os
 import subprocess
+import time
 
 start = int(sys.argv[1])
 end = int(sys.argv[2])
@@ -24,4 +25,5 @@ for i, link in enumerate(main_links[start:end+1]):
             print("============== Waiting Ends")
             processes.difference_update([p for p in processes if p.poll() is
                 not None])
+        time.sleep(1)
 
