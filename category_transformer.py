@@ -2,6 +2,9 @@ import torch
 import sys
 import argparse
 
+from transformer import *
+from neural_classifier import *
+
 def read_mono(filename):
     """Read sentences from the file named by 'filename.' """
     data = []
